@@ -5,21 +5,16 @@ spring:
     name: "crediya-autenticacacion-ms"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     include: null
   datasource:
-    # Base de datos en archivo (carpeta ./data) para que los registros sobrevivan a reinicios.
-    # TODO: reemplazar por la base de datos definitiva (ej. PostgreSQL) cuando esté disponible
-    url: "jdbc:h2:file:./data/crediya;AUTO_SERVER=TRUE"
-    username: "sa"
-    password: ""
-    driverClassName: "org.h2.Driver"
+    # PostgreSQL local (contenedor Docker postgres_local). Se pueden sobrescribir con variables de entorno.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/mi_db}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+    driverClassName: "org.postgresql.Driver"
   jpa:
-    databasePlatform: "org.hibernate.dialect.H2Dialect"
+    databasePlatform: "org.hibernate.dialect.PostgreSQLDialect"
 management:
   endpoints:
     web:

@@ -334,7 +334,3 @@ gradle-app.setting
 # -----
 *.hprof
 build-cache
-
-# Base de datos H2 local
-/data/
-/applications/app-service/data/
