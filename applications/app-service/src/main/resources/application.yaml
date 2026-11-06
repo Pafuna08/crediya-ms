@@ -12,7 +12,9 @@ spring:
   profiles:
     include: null
   datasource:
-    url: "jdbc:h2:mem:test"
+    # Base de datos en archivo (carpeta ./data) para que los registros sobrevivan a reinicios.
+    # TODO: reemplazar por la base de datos definitiva (ej. PostgreSQL) cuando esté disponible
+    url: "jdbc:h2:file:./data/crediya;AUTO_SERVER=TRUE"
     username: "sa"
     password: ""
     driverClassName: "org.h2.Driver"
