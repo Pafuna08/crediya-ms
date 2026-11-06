@@ -17,14 +17,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Representación del usuario en la base de datos (tabla "usuarios").
- * Es distinta del modelo de dominio User para que el dominio no dependa de JPA.
+ * Representación del usuario en la tabla "usuario" de PostgreSQL.
+ * Los nombres de columna siguen el modelo de datos; el adaptador los traduce al modelo de dominio.
  */
 @Entity
-@Table(name = "usuarios",
+@Table(name = "usuario",
         uniqueConstraints = @UniqueConstraint(
-                name = UserEntity.UK_CORREO_ELECTRONICO,
-                columnNames = "correo_electronico"))
+                name = UserEntity.UK_EMAIL,
+                columnNames = "email"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,17 +32,19 @@ import java.time.LocalDate;
 @Builder
 public class UserEntity {
 
-    public static final String UK_CORREO_ELECTRONICO = "uk_usuarios_correo_electronico";
+    /** Nombre de la restricción UNIQUE del email en la base de datos. */
+    public static final String UK_EMAIL = "usuario_email_key";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id_usuario")
+    private Integer idUsuario;
 
-    @Column(name = "nombres", nullable = false, length = 100)
-    private String nombres;
+    @Column(name = "nombre", nullable = false, length = 100)
+    private String nombre;
 
-    @Column(name = "apellidos", nullable = false, length = 100)
-    private String apellidos;
+    @Column(name = "apellido", nullable = false, length = 100)
+    private String apellido;
 
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
@@ -53,9 +55,9 @@ public class UserEntity {
     @Column(name = "telefono", length = 20)
     private String telefono;
 
-    @Column(name = "correo_electronico", nullable = false, length = 150)
-    private String correoElectronico;
+    @Column(name = "email", nullable = false, length = 150)
+    private String email;
 
-    @Column(name = "salario_base", nullable = false, precision = 15, scale = 2)
+    @Column(name = "salario_base", nullable = false, precision = 12, scale = 2)
     private BigDecimal salarioBase;
 }

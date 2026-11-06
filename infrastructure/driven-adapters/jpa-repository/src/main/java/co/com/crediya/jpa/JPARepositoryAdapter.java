@@ -18,7 +18,7 @@ import java.util.Locale;
  */
 @Slf4j
 @Repository
-public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, Long, JPARepository>
+public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, Integer, JPARepository>
         implements UserRepository {
 
     public JPARepositoryAdapter(JPARepository repository, ObjectMapper mapper) {
@@ -46,38 +46,40 @@ public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, Lo
     @Override
     @Transactional(readOnly = true)
     public boolean existsByCorreoElectronico(String correoElectronico) {
-        return repository.existsByCorreoElectronico(correoElectronico);
+        return repository.existsByEmail(correoElectronico);
     }
 
+    /** Dominio → tabla "usuario" (los nombres de columna difieren de los del dominio). */
     @Override
     protected UserEntity toData(User user) {
         return UserEntity.builder()
-                .id(user.getId())
-                .nombres(user.getNombres())
-                .apellidos(user.getApellidos())
+                .idUsuario(user.getId() == null ? null : Math.toIntExact(user.getId()))
+                .nombre(user.getNombres())
+                .apellido(user.getApellidos())
                 .fechaNacimiento(user.getFechaNacimiento())
                 .direccion(user.getDireccion())
                 .telefono(user.getTelefono())
-                .correoElectronico(user.getCorreoElectronico())
+                .email(user.getCorreoElectronico())
                 .salarioBase(user.getSalarioBase())
                 .build();
     }
 
+    /** Tabla "usuario" → dominio. */
     private static User toDomain(UserEntity entity) {
         return User.builder()
-                .id(entity.getId())
-                .nombres(entity.getNombres())
-                .apellidos(entity.getApellidos())
+                .id(entity.getIdUsuario() == null ? null : entity.getIdUsuario().longValue())
+                .nombres(entity.getNombre())
+                .apellidos(entity.getApellido())
                 .fechaNacimiento(entity.getFechaNacimiento())
                 .direccion(entity.getDireccion())
                 .telefono(entity.getTelefono())
-                .correoElectronico(entity.getCorreoElectronico())
+                .correoElectronico(entity.getEmail())
                 .salarioBase(entity.getSalarioBase())
                 .build();
     }
 
     private static boolean esViolacionDeCorreoUnico(DataIntegrityViolationException e) {
         String mensaje = String.valueOf(e.getMostSpecificCause().getMessage()).toLowerCase(Locale.ROOT);
-        return mensaje.contains(UserEntity.UK_CORREO_ELECTRONICO);
+        return mensaje.contains(UserEntity.UK_EMAIL);
     }
 }
