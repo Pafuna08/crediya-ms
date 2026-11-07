@@ -2,6 +2,7 @@ package co.com.crediya.usecase.solicitud;
 
 import co.com.crediya.model.estado.Estado;
 import co.com.crediya.model.estado.gateways.EstadoRepository;
+import co.com.crediya.model.exceptions.AccesoDenegadoException;
 import co.com.crediya.model.exceptions.DatosInvalidosException;
 import co.com.crediya.model.exceptions.TipoPrestamoNoExisteException;
 import co.com.crediya.model.solicitud.Solicitud;
@@ -31,6 +32,8 @@ class SolicitudUseCaseTest {
             TipoPrestamo.builder().id(1L).nombre("Libre inversión").tasaInteres(new BigDecimal("1.80")).build();
     private static final Estado PENDIENTE =
             Estado.builder().id(1L).nombre(Estado.PENDIENTE_REVISION).build();
+
+    private static final String DOC = "1234567890";
 
     private SolicitudRepository solicitudRepository;
     private TipoPrestamoRepository tipoPrestamoRepository;
@@ -67,7 +70,7 @@ class SolicitudUseCaseTest {
                 .estado(Estado.builder().id(4L).nombre("Aprobada").build())
                 .build();
 
-        Solicitud resultado = useCase.registrarSolicitud(entrada);
+        Solicitud resultado = useCase.registrarSolicitud(entrada, DOC);
 
         ArgumentCaptor<Solicitud> captor = ArgumentCaptor.forClass(Solicitud.class);
         verify(solicitudRepository).save(captor.capture());
@@ -86,7 +89,7 @@ class SolicitudUseCaseTest {
         Solicitud entrada = solicitudValida().toBuilder().tipoPrestamo(TipoPrestamo.builder().id(77L).build()).build();
 
         TipoPrestamoNoExisteException ex = assertThrows(TipoPrestamoNoExisteException.class,
-                () -> useCase.registrarSolicitud(entrada));
+                () -> useCase.registrarSolicitud(entrada, DOC));
 
         assertTrue(ex.getMessage().contains("77"));
         verify(solicitudRepository, never()).save(any());
@@ -97,7 +100,7 @@ class SolicitudUseCaseTest {
         Solicitud vacia = Solicitud.builder().documentoIdentidad("  ").build();
 
         DatosInvalidosException ex = assertThrows(DatosInvalidosException.class,
-                () -> useCase.registrarSolicitud(vacia));
+                () -> useCase.registrarSolicitud(vacia, DOC));
 
         assertEquals(4, ex.getErrores().size());
         assertTrue(ex.getErrores().contains("El campo documento_identidad es obligatorio"));
@@ -109,7 +112,7 @@ class SolicitudUseCaseTest {
 
     @Test
     void rechazaSolicitudNula() {
-        assertThrows(DatosInvalidosException.class, () -> useCase.registrarSolicitud(null));
+        assertThrows(DatosInvalidosException.class, () -> useCase.registrarSolicitud(null, DOC));
     }
 
     @Test
@@ -117,7 +120,7 @@ class SolicitudUseCaseTest {
         Solicitud entrada = solicitudValida().toBuilder().monto(BigDecimal.ZERO).plazo(-3).build();
 
         DatosInvalidosException ex = assertThrows(DatosInvalidosException.class,
-                () -> useCase.registrarSolicitud(entrada));
+                () -> useCase.registrarSolicitud(entrada, DOC));
 
         assertTrue(ex.getErrores().contains("El campo monto debe ser mayor que 0"));
         assertTrue(ex.getErrores().contains("El campo plazo debe ser mayor que 0 (en meses)"));
@@ -129,9 +132,9 @@ class SolicitudUseCaseTest {
         Solicitud muyLargo = solicitudValida().toBuilder().documentoIdentidad("1".repeat(21)).build();
 
         DatosInvalidosException ex1 = assertThrows(DatosInvalidosException.class,
-                () -> useCase.registrarSolicitud(conSimbolos));
+                () -> useCase.registrarSolicitud(conSimbolos, DOC));
         DatosInvalidosException ex2 = assertThrows(DatosInvalidosException.class,
-                () -> useCase.registrarSolicitud(muyLargo));
+                () -> useCase.registrarSolicitud(muyLargo, DOC));
 
         assertTrue(ex1.getErrores().getFirst().contains("letras y números"));
         assertTrue(ex2.getErrores().getFirst().contains("20 caracteres"));
@@ -141,7 +144,29 @@ class SolicitudUseCaseTest {
     void fallaControladamenteSiNoExisteElEstadoInicial() {
         when(estadoRepository.findByNombre(Estado.PENDIENTE_REVISION)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> useCase.registrarSolicitud(solicitudValida()));
+        assertThrows(IllegalStateException.class, () -> useCase.registrarSolicitud(solicitudValida(), DOC));
         verify(solicitudRepository, never()).save(any());
+    }
+
+    @Test
+    void clienteNoPuedeCrearSolicitudesAOtroDocumento() {
+        AccesoDenegadoException ex = assertThrows(AccesoDenegadoException.class,
+                () -> useCase.registrarSolicitud(solicitudValida(), "9999999999"));
+
+        assertEquals("Solo puede crear solicitudes de préstamo a su propio nombre", ex.getMessage());
+        verify(solicitudRepository, never()).save(any());
+    }
+
+    @Test
+    void sinDocumentoDelSolicitanteNoSePermiteCrearSolicitudes() {
+        assertThrows(AccesoDenegadoException.class, () -> useCase.registrarSolicitud(solicitudValida(), null));
+        verify(solicitudRepository, never()).save(any());
+    }
+
+    @Test
+    void losDatosInvalidosSeInformanAntesQueElPermiso() {
+        Solicitud sinMonto = solicitudValida().toBuilder().monto(null).build();
+
+        assertThrows(DatosInvalidosException.class, () -> useCase.registrarSolicitud(sinMonto, "9999999999"));
     }
 }
