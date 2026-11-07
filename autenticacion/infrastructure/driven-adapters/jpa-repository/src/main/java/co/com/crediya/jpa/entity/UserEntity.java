@@ -2,6 +2,9 @@ package co.com.crediya.jpa.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,6 +37,8 @@ public class UserEntity {
 
     /** Nombre de la restricción UNIQUE del email en la base de datos. */
     public static final String UK_EMAIL = "usuario_email_key";
+    /** Nombre de la restricción UNIQUE del documento en la base de datos. */
+    public static final String UK_DOCUMENTO = "usuario_documento_identidad_key";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,4 +65,20 @@ public class UserEntity {
 
     @Column(name = "salario_base", nullable = false, precision = 12, scale = 2)
     private BigDecimal salarioBase;
+
+    @Column(name = "documento_identidad", nullable = false, length = 20)
+    private String documentoIdentidad;
+
+    /** Clave cifrada con BCrypt (nunca en texto plano). */
+    @Column(name = "clave", nullable = false, length = 100)
+    private String clave;
+
+    /** Llave foránea al rol; es la columna que se escribe al guardar. */
+    @Column(name = "id_rol", nullable = false)
+    private Integer idRol;
+
+    /** Rol completo, solo de lectura (por ejemplo al iniciar sesión). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_rol", insertable = false, updatable = false)
+    private RolEntity rol;
 }

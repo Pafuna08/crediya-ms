@@ -1,8 +1,12 @@
 package co.com.crediya.api.exception;
 
 import co.com.crediya.api.dto.ApiErrorResponse;
+import co.com.crediya.model.exceptions.BusinessException;
 import co.com.crediya.model.exceptions.CorreoYaRegistradoException;
+import co.com.crediya.model.exceptions.CredencialesInvalidasException;
 import co.com.crediya.model.exceptions.DatosInvalidosException;
+import co.com.crediya.model.exceptions.DocumentoYaRegistradoException;
+import co.com.crediya.model.exceptions.RolNoExisteException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -32,11 +36,23 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.BAD_REQUEST, ex.getErrores(), request);
     }
 
-    @ExceptionHandler(CorreoYaRegistradoException.class)
-    public ResponseEntity<ApiErrorResponse> handleCorreoYaRegistrado(CorreoYaRegistradoException ex,
-                                                                     HttpServletRequest request) {
+    @ExceptionHandler({CorreoYaRegistradoException.class, DocumentoYaRegistradoException.class})
+    public ResponseEntity<ApiErrorResponse> handleYaRegistrado(BusinessException ex, HttpServletRequest request) {
         log.warn("Conflicto en {}: {}", request.getRequestURI(), ex.getMessage());
         return construir(HttpStatus.CONFLICT, List.of(ex.getMessage()), request);
+    }
+
+    @ExceptionHandler(RolNoExisteException.class)
+    public ResponseEntity<ApiErrorResponse> handleRolNoExiste(RolNoExisteException ex, HttpServletRequest request) {
+        log.warn("Rol inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+        return construir(HttpStatus.BAD_REQUEST, List.of(ex.getMessage()), request);
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<ApiErrorResponse> handleCredenciales(CredencialesInvalidasException ex,
+                                                               HttpServletRequest request) {
+        log.warn("Inicio de sesión fallido en {}", request.getRequestURI());
+        return construir(HttpStatus.UNAUTHORIZED, List.of(ex.getMessage()), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

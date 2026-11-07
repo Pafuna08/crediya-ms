@@ -2,4 +2,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    // Protege los endpoints validando el token JWT de cada petición
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+
+    testImplementation 'org.springframework.security:spring-security-test'
 }

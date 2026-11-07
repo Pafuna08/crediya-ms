@@ -2,6 +2,7 @@ package co.com.crediya.usecase.solicitud;
 
 import co.com.crediya.model.estado.Estado;
 import co.com.crediya.model.estado.gateways.EstadoRepository;
+import co.com.crediya.model.exceptions.AccesoDenegadoException;
 import co.com.crediya.model.exceptions.DatosInvalidosException;
 import co.com.crediya.model.exceptions.TipoPrestamoNoExisteException;
 import co.com.crediya.model.solicitud.Solicitud;
@@ -31,10 +32,22 @@ public class SolicitudUseCase {
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final EstadoRepository estadoRepository;
 
-    public Solicitud registrarSolicitud(Solicitud solicitud) {
+    /**
+     * @param solicitud            datos enviados por el cliente
+     * @param documentoSolicitante documento de identidad de quien inició sesión
+     */
+    public Solicitud registrarSolicitud(Solicitud solicitud, String documentoSolicitante) {
         log.info("Iniciando registro de solicitud de préstamo");
 
         validarDatos(solicitud);
+
+        // Un cliente solo puede pedir préstamos a su propio nombre
+        String documento = solicitud.getDocumentoIdentidad().trim();
+        if (documentoSolicitante == null || !documento.equals(documentoSolicitante.trim())) {
+            log.warning("Registro rechazado: el solicitante con documento " + documentoSolicitante
+                    + " intentó crear una solicitud para el documento " + documento);
+            throw new AccesoDenegadoException("Solo puede crear solicitudes de préstamo a su propio nombre");
+        }
 
         Long idTipo = solicitud.getTipoPrestamo().getId();
         TipoPrestamo tipoPrestamo = tipoPrestamoRepository.findById(idTipo)
@@ -50,7 +63,7 @@ public class SolicitudUseCase {
 
         Solicitud nueva = solicitud.toBuilder()
                 .id(null)
-                .documentoIdentidad(solicitud.getDocumentoIdentidad().trim())
+                .documentoIdentidad(documento)
                 .tipoPrestamo(tipoPrestamo)
                 .estado(estadoInicial)
                 .fechaCreacion(null)

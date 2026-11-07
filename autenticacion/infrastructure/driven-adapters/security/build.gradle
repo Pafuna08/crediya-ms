@@ -1,0 +1,9 @@
+dependencies {
+    implementation project(':model')
+    implementation 'org.springframework:spring-context'
+    implementation 'org.slf4j:slf4j-api'
+    // Cifrado de claves con BCrypt
+    implementation 'org.springframework.security:spring-security-crypto'
+    // Firma de tokens JWT
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+}
