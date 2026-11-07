@@ -7,7 +7,7 @@ generada con el plugin de arquitectura limpia de Bancolombia), con su propio `gr
 | Microservicio | Carpeta | Puerto | Base de datos | Historias |
 |---|---|---|---|---|
 | Autenticación | [`autenticacion/`](autenticacion/) | 8080 | `mi_db` | HU1 Registrar usuarios, HU3 Autenticación |
-| Solicitudes | [`solicitudes/`](solicitudes/) | 8081 | `solicitudes_db` | HU2 Registrar solicitud de préstamo, HU3 Autenticación |
+| Solicitudes | [`solicitudes/`](solicitudes/) | 8081 | `solicitudes_db` | HU2 Registrar solicitud de préstamo, HU3 Autenticación, HU4 Listado para revisión |
 
 ## Requisitos
 
@@ -52,7 +52,25 @@ cd solicitudes   && ./gradlew test
 |---|---|---|---|---|
 | POST | `/api/v1/login` | Autenticación | Cualquiera | Inicia sesión con correo y clave; devuelve un token JWT |
 | POST | `/api/v1/usuarios` | Autenticación | ADMIN, ASESOR | Registra un usuario con su clave y su rol |
+| GET | `/api/v1/usuarios?documentos=a,b` | Autenticación | ADMIN, ASESOR | Datos de varios usuarios por documento (máx. 100); lo usa solicitudes |
 | POST | `/api/v1/solicitud` | Solicitudes | CLIENTE | Registra una solicitud de préstamo a nombre del propio cliente, en estado "Pendiente de revisión" |
+| GET | `/api/v1/solicitud` | Solicitudes | ASESOR | Listado paginado y filtrable de solicitudes para revisión manual |
+
+## Listado para revisión (HU4)
+
+```http
+GET http://localhost:8081/api/v1/solicitud?pagina=0&tamano=10&estado=Rechazada&id_tipo_prestamo=1&documento_identidad=123
+Authorization: Bearer <token de un ASESOR>
+```
+
+- Muestra solo las solicitudes en "Pendiente de revisión", "Rechazada" o "Revision manual", de la más antigua a la más reciente.
+- Filtros opcionales: `estado` (uno de los tres anteriores), `id_tipo_prestamo`, `documento_identidad`. Paginación: `pagina` (desde 0) y `tamano` (1 a 50, por defecto 10).
+- Cada fila trae `monto`, `plazo`, `email`, `nombre`, `tipo_prestamo`, `tasa_interes`, `estado_solicitud`, `salario_base`
+  y `deuda_total_mensual_solicitudes_aprobadas`.
+- `email`, `nombre` y `salario_base` los consulta solicitudes a autenticación por HTTP (`AUTENTICACION_URL`, por defecto
+  `http://localhost:8080`), reenviando el token del asesor. Si autenticación no responde, el listado devuelve 503.
+- La deuda mensual es la suma de las cuotas de los préstamos **aprobados** del cliente, con amortización francesa:
+  `cuota = monto × i × (1+i)^n / ((1+i)^n − 1)`, donde `i` es la tasa mensual y `n` el plazo en meses.
 
 ## Autenticación (HU3)
 
