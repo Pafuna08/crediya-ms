@@ -6,6 +6,7 @@ import co.com.crediya.model.exceptions.DatosInvalidosException;
 import co.com.crediya.model.exceptions.TipoPrestamoNoExisteException;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.tipoprestamo.TipoPrestamo;
+import co.com.crediya.usecase.listarsolicitudes.ListarSolicitudesUseCase;
 import co.com.crediya.usecase.solicitud.SolicitudUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,9 @@ class SolicitudControllerTest {
 
     @MockitoBean
     private SolicitudUseCase solicitudUseCase;
+
+    @MockitoBean
+    private ListarSolicitudesUseCase listarSolicitudesUseCase;
 
     private RestTestClient client;
 

@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Reglas de acceso del microservicio de autenticación.
  * - POST /api/v1/login es público (es donde se obtiene el token).
- * - POST /api/v1/usuarios solo para ADMIN o ASESOR.
+ * - POST /api/v1/usuarios (registrar) y GET /api/v1/usuarios (consultar por documento) solo para ADMIN o ASESOR.
  * - Todo lo demás exige un token válido.
  */
 @Slf4j
@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/usuarios").hasAnyRole(Rol.ADMIN, Rol.ASESOR)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/usuarios").hasAnyRole(Rol.ADMIN, Rol.ASESOR)
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/actuator/prometheus", "/error")
                         .permitAll()
                         .anyRequest().authenticated())

@@ -33,3 +33,7 @@ security:
     # DEBE ser la misma clave que usa el microservicio de autenticación para firmar los tokens.
     # El valor por defecto es SOLO para desarrollo: en otros ambientes definir JWT_SECRET (mínimo 32 caracteres).
     secret: "${JWT_SECRET:crediya-clave-secreta-solo-para-desarrollo-local}"
+autenticacion:
+  # Microservicio de autenticación: de ahí salen nombre, correo y salario de los clientes (HU4)
+  url: "${AUTENTICACION_URL:http://localhost:8080}"
+  timeout-ms: 5000

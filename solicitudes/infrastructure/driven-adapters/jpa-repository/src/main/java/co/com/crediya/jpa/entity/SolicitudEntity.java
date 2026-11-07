@@ -2,6 +2,9 @@ package co.com.crediya.jpa.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -51,6 +54,16 @@ public class SolicitudEntity {
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
+
+    /** Tipo de préstamo completo, solo de lectura (se escribe con idTipoPrestamo). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_prestamo", insertable = false, updatable = false)
+    private TipoPrestamoEntity tipoPrestamo;
+
+    /** Estado completo, solo de lectura (se escribe con idEstado). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_estado", insertable = false, updatable = false)
+    private EstadoEntity estado;
 
     @PrePersist
     public void asignarFechaCreacion() {

@@ -7,14 +7,20 @@ import co.com.crediya.jpa.repository.EstadoJpaRepository;
 import co.com.crediya.jpa.repository.SolicitudJpaRepository;
 import co.com.crediya.jpa.repository.TipoPrestamoJpaRepository;
 import co.com.crediya.model.estado.Estado;
+import co.com.crediya.model.pagina.Pagina;
+import co.com.crediya.model.solicitud.FiltroSolicitudes;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.tipoprestamo.TipoPrestamo;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.reactivecommons.utils.ObjectMapper;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,5 +120,68 @@ class RepositoryAdaptersTest {
 
         assertEquals(1L, estado.getId());
         assertEquals("Espera evaluación", estado.getDescripcion());
+    }
+
+    private static SolicitudEntity entidadCompleta(int id, String documento, String estado) {
+        return SolicitudEntity.builder()
+                .idSolicitud(id).documentoIdentidad(documento).monto(new BigDecimal("1000000")).plazo(12)
+                .idTipoPrestamo(2).idEstado(1).fechaCreacion(LocalDateTime.of(2026, 11, 6, 10, 0))
+                .tipoPrestamo(TipoPrestamoEntity.builder().idTipoPrestamo(2).nombre("Vehículo")
+                        .tasaInteres(new BigDecimal("1.30")).build())
+                .estado(EstadoEntity.builder().idEstado(1).nombre(estado).build())
+                .build();
+    }
+
+    @Test
+    void listaSolicitudesPorEstadosPaginadasYOrdenadasPorAntiguedad() {
+        SolicitudJpaRepository repo = mock(SolicitudJpaRepository.class);
+        SolicitudRepositoryAdapter adapter = new SolicitudRepositoryAdapter(repo, mock(ObjectMapper.class));
+        List<String> estados = List.of(Estado.PENDIENTE_REVISION, Estado.RECHAZADA);
+        when(repo.buscarPorEstados(eq(estados), eq(2), eq("3000000000"), any(Pageable.class)))
+                .thenAnswer(inv -> new PageImpl<>(List.of(entidadCompleta(5, "3000000000", Estado.PENDIENTE_REVISION)),
+                        inv.getArgument(3), 11));
+
+        Pagina<Solicitud> pagina = adapter.findByEstados(estados,
+                new FiltroSolicitudes(null, 2L, "3000000000"), 1, 5);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(repo).buscarPorEstados(eq(estados), eq(2), eq("3000000000"), captor.capture());
+        assertEquals(1, captor.getValue().getPageNumber());
+        assertEquals(5, captor.getValue().getPageSize());
+        assertEquals(Sort.Direction.ASC, captor.getValue().getSort().getOrderFor("fechaCreacion").getDirection());
+
+        assertEquals(11, pagina.totalElementos());
+        assertEquals(3, pagina.totalPaginas());
+        Solicitud s = pagina.contenido().getFirst();
+        assertEquals(5L, s.getId());
+        assertEquals("Vehículo", s.getTipoPrestamo().getNombre());
+        assertEquals(new BigDecimal("1.30"), s.getTipoPrestamo().getTasaInteres());
+        assertEquals(Estado.PENDIENTE_REVISION, s.getEstado().getNombre());
+    }
+
+    @Test
+    void listaSolicitudesSinFiltroDeTipo() {
+        SolicitudJpaRepository repo = mock(SolicitudJpaRepository.class);
+        SolicitudRepositoryAdapter adapter = new SolicitudRepositoryAdapter(repo, mock(ObjectMapper.class));
+        when(repo.buscarPorEstados(any(), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Pagina<Solicitud> pagina = adapter.findByEstados(List.of(Estado.RECHAZADA), FiltroSolicitudes.sinFiltros(), 0, 10);
+
+        assertTrue(pagina.contenido().isEmpty());
+    }
+
+    @Test
+    void buscaLasAprobadasDeVariosClientes() {
+        SolicitudJpaRepository repo = mock(SolicitudJpaRepository.class);
+        SolicitudRepositoryAdapter adapter = new SolicitudRepositoryAdapter(repo, mock(ObjectMapper.class));
+        when(repo.buscarPorDocumentosYEstado(List.of("3000000000"), Estado.APROBADA))
+                .thenReturn(List.of(entidadCompleta(9, "3000000000", Estado.APROBADA)));
+
+        List<Solicitud> aprobadas = adapter.findByDocumentosAndEstado(List.of("3000000000"), Estado.APROBADA);
+
+        assertEquals(1, aprobadas.size());
+        assertEquals(new BigDecimal("1.30"), aprobadas.getFirst().getTipoPrestamo().getTasaInteres());
+        assertEquals(Estado.APROBADA, aprobadas.getFirst().getEstado().getNombre());
     }
 }
