@@ -1,0 +1,30 @@
+server:
+  # Autenticación usa el 8080; solicitudes corre en el 8081 para poder levantar ambos a la vez
+  port: 8081
+spring:
+  application:
+    name: "crediya-solicitudes-ms"
+  devtools:
+    add-properties: false
+  profiles:
+    include: null
+  datasource:
+    # PostgreSQL local (contenedor Docker postgres_local), base propia del microservicio.
+    # Se pueden sobrescribir con variables de entorno.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/solicitudes_db}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+    driverClassName: "org.postgresql.Driver"
+  jpa:
+    databasePlatform: "org.hibernate.dialect.PostgreSQLDialect"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"

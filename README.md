@@ -1,47 +1,59 @@
-# Proyecto Base Implementando Clean Architecture
+# CrediYa
 
-## Antes de Iniciar
+Plataforma de solicitudes de préstamo organizada en microservicios.
+Cada microservicio es una aplicación Spring Boot independiente (Spring MVC, arquitectura hexagonal
+generada con el plugin de arquitectura limpia de Bancolombia), con su propio `gradlew`, puerto y base de datos.
 
-Empezaremos por explicar los diferentes componentes del proyectos y partiremos de los componentes externos, continuando con los componentes core de negocio (dominio) y por último el inicio y configuración de la aplicación.
+| Microservicio | Carpeta | Puerto | Base de datos | Historias |
+|---|---|---|---|---|
+| Autenticación | [`autenticacion/`](autenticacion/) | 8080 | `mi_db` | HU1 Registrar usuarios |
+| Solicitudes | [`solicitudes/`](solicitudes/) | 8081 | `solicitudes_db` | HU2 Registrar solicitud de préstamo |
 
-Lee el artículo [Clean Architecture — Aislando los detalles](https://medium.com/bancolombia-tech/clean-architecture-aislando-los-detalles-4f9530f35d7a)
+## Requisitos
 
-# Arquitectura
+- Java 25 (Gradle lo descarga con toolchains si no está instalado)
+- PostgreSQL 17 en `localhost:5432` (contenedor Docker `postgres_local` dentro de Ubuntu/WSL)
 
-![Clean Architecture](https://miro.medium.com/max/1400/1*ZdlHz8B0-qu9Y-QO3AXR_w.png)
+## Base de datos
 
-## Domain
+Los scripts de cada microservicio están en `<microservicio>/deployment/database/` y se ejecutan en orden:
 
-Es el módulo más interno de la arquitectura, pertenece a la capa del dominio y encapsula la lógica y reglas del negocio mediante modelos y entidades del dominio.
+```bash
+# Autenticación (base mi_db)
+docker exec -i postgres_local psql -U postgres -d mi_db -1 < autenticacion/deployment/database/01_hu1_registro_usuarios.sql
 
-## Usecases
+# Solicitudes (crear la base una sola vez y luego aplicar el script)
+docker exec postgres_local psql -U postgres -c "CREATE DATABASE solicitudes_db"
+docker exec -i postgres_local psql -U postgres -d solicitudes_db -1 < solicitudes/deployment/database/01_hu2_registro_solicitud.sql
+```
 
-Este módulo gradle perteneciente a la capa del dominio, implementa los casos de uso del sistema, define lógica de aplicación y reacciona a las invocaciones desde el módulo de entry points, orquestando los flujos hacia el módulo de entities.
+Usuario, contraseña y URL se pueden cambiar con las variables de entorno `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`.
 
-## Infrastructure
+## Ejecutar
 
-### Helpers
+Cada microservicio se levanta desde su carpeta:
 
-En el apartado de helpers tendremos utilidades generales para los Driven Adapters y Entry Points.
+```bash
+cd autenticacion && ./gradlew :app-service:bootRun   # http://localhost:8080
+cd solicitudes   && ./gradlew :app-service:bootRun   # http://localhost:8081
+```
 
-Estas utilidades no están arraigadas a objetos concretos, se realiza el uso de generics para modelar comportamientos
-genéricos de los diferentes objetos de persistencia que puedan existir, este tipo de implementaciones se realizan
-basadas en el patrón de diseño [Unit of Work y Repository](https://medium.com/@krzychukosobudzki/repository-design-pattern-bc490b256006)
+## Pruebas
 
-Estas clases no puede existir solas y debe heredarse su compartimiento en los **Driven Adapters**
+```bash
+cd autenticacion && ./gradlew test
+cd solicitudes   && ./gradlew test
+```
 
-### Driven Adapters
+## Endpoints
 
-Los driven adapter representan implementaciones externas a nuestro sistema, como lo son conexiones a servicios rest,
-soap, bases de datos, lectura de archivos planos, y en concreto cualquier origen y fuente de datos con la que debamos
-interactuar.
+| Método | Ruta | Microservicio | Descripción |
+|---|---|---|---|
+| POST | `/api/v1/usuarios` | Autenticación | Registra un usuario |
+| POST | `/api/v1/solicitud` | Solicitudes | Registra una solicitud de préstamo en estado "Pendiente de revisión" |
 
-### Entry Points
+## Flujo de ramas
 
-Los entry points representan los puntos de entrada de la aplicación o el inicio de los flujos de negocio.
-
-## Application
-
-Este módulo es el más externo de la arquitectura, es el encargado de ensamblar los distintos módulos, resolver las dependencias y crear los beans de los casos de use (UseCases) de forma automática, inyectando en éstos instancias concretas de las dependencias declaradas. Además inicia la aplicación (es el único módulo del proyecto donde encontraremos la función “public static void main(String[] args)”.
-
-**Los beans de los casos de uso se disponibilizan automaticamente gracias a un '@ComponentScan' ubicado en esta capa.**
+- `main`: versión estable.
+- `develop`: integración de las historias terminadas.
+- `feature/huN-...`: una rama por historia de usuario; se une a `develop` y luego `develop` a `main`.
