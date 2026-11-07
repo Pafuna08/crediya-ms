@@ -28,3 +28,8 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
+security:
+  jwt:
+    # DEBE ser la misma clave que usa el microservicio de autenticación para firmar los tokens.
+    # El valor por defecto es SOLO para desarrollo: en otros ambientes definir JWT_SECRET (mínimo 32 caracteres).
+    secret: "${JWT_SECRET:crediya-clave-secreta-solo-para-desarrollo-local}"
