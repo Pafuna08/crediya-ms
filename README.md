@@ -6,8 +6,8 @@ generada con el plugin de arquitectura limpia de Bancolombia), con su propio `gr
 
 | Microservicio | Carpeta | Puerto | Base de datos | Historias |
 |---|---|---|---|---|
-| Autenticación | [`autenticacion/`](autenticacion/) | 8080 | `mi_db` | HU1 Registrar usuarios |
-| Solicitudes | [`solicitudes/`](solicitudes/) | 8081 | `solicitudes_db` | HU2 Registrar solicitud de préstamo |
+| Autenticación | [`autenticacion/`](autenticacion/) | 8080 | `mi_db` | HU1 Registrar usuarios, HU3 Autenticación |
+| Solicitudes | [`solicitudes/`](solicitudes/) | 8081 | `solicitudes_db` | HU2 Registrar solicitud de préstamo, HU3 Autenticación |
 
 ## Requisitos
 
@@ -21,6 +21,7 @@ Los scripts de cada microservicio están en `<microservicio>/deployment/database
 ```bash
 # Autenticación (base mi_db)
 docker exec -i postgres_local psql -U postgres -d mi_db -1 < autenticacion/deployment/database/01_hu1_registro_usuarios.sql
+docker exec -i postgres_local psql -U postgres -d mi_db -1 < autenticacion/deployment/database/02_hu3_autenticacion.sql
 
 # Solicitudes (crear la base una sola vez y luego aplicar el script)
 docker exec postgres_local psql -U postgres -c "CREATE DATABASE solicitudes_db"
@@ -47,10 +48,29 @@ cd solicitudes   && ./gradlew test
 
 ## Endpoints
 
-| Método | Ruta | Microservicio | Descripción |
-|---|---|---|---|
-| POST | `/api/v1/usuarios` | Autenticación | Registra un usuario |
-| POST | `/api/v1/solicitud` | Solicitudes | Registra una solicitud de préstamo en estado "Pendiente de revisión" |
+| Método | Ruta | Microservicio | Quién puede usarlo | Descripción |
+|---|---|---|---|---|
+| POST | `/api/v1/login` | Autenticación | Cualquiera | Inicia sesión con correo y clave; devuelve un token JWT |
+| POST | `/api/v1/usuarios` | Autenticación | ADMIN, ASESOR | Registra un usuario con su clave y su rol |
+| POST | `/api/v1/solicitud` | Solicitudes | CLIENTE | Registra una solicitud de préstamo a nombre del propio cliente, en estado "Pendiente de revisión" |
+
+## Autenticación (HU3)
+
+1. Iniciar sesión:
+   ```http
+   POST http://localhost:8080/api/v1/login
+   { "correo_electronico": "admin@crediya.com", "clave": "Admin123*" }
+   ```
+2. Enviar el token recibido en las demás peticiones:
+   ```http
+   Authorization: Bearer <token>
+   ```
+
+- Roles: `ADMIN` (1), `ASESOR` (2), `CLIENTE` (3). Al registrar un usuario se indica `id_rol`.
+- Administrador inicial **solo para desarrollo**: `admin@crediya.com` / `Admin123*` (lo crea el script `02_hu3_autenticacion.sql`).
+- Los tokens duran 1 hora y los firma autenticación con la clave `JWT_SECRET`. Solicitudes valida la firma con **la misma** clave,
+  así que ambos microservicios deben usar el mismo valor. El valor por defecto de `application.yaml` es solo para desarrollo.
+- Las claves se guardan cifradas con BCrypt. Los intentos de inicio de sesión son ilimitados.
 
 ## Flujo de ramas
 
