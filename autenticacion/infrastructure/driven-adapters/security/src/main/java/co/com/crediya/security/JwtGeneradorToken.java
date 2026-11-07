@@ -4,6 +4,7 @@ import co.com.crediya.model.seguridad.Token;
 import co.com.crediya.model.seguridad.gateways.GeneradorToken;
 import co.com.crediya.model.user.User;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -37,6 +38,7 @@ public class JwtGeneradorToken implements GeneradorToken {
     private final long expiracionSegundos;
     private final Clock clock;
 
+    @Autowired
     public JwtGeneradorToken(@Value("${security.jwt.secret}") String secreto,
                              @Value("${security.jwt.expiracion-segundos:3600}") long expiracionSegundos) {
         this(secreto, expiracionSegundos, Clock.systemUTC());
