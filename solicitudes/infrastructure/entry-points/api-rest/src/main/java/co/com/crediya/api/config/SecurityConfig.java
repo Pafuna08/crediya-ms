@@ -33,7 +33,8 @@ import java.util.List;
  * Reglas de acceso del microservicio de solicitudes.
  * Los tokens los emite el microservicio de autenticación; aquí solo se valida su firma
  * con la misma clave secreta compartida.
- * - POST /api/v1/solicitud solo para el rol CLIENTE.
+ * - POST /api/v1/solicitud (crear) solo para el rol CLIENTE.
+ * - GET /api/v1/solicitud (listado para revisión, HU4) solo para el rol ASESOR.
  * - Todo lo demás exige un token válido.
  */
 @Slf4j
@@ -44,6 +45,7 @@ public class SecurityConfig {
     static final String CLAIM_ROL = "rol";
     static final String EMISOR = "crediya-autenticacion";
     static final String ROL_CLIENTE = "CLIENTE";
+    static final String ROL_ASESOR = "ASESOR";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JsonMapper jsonMapper) throws Exception {
@@ -55,6 +57,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/solicitud").hasRole(ROL_CLIENTE)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/solicitud").hasRole(ROL_ASESOR)
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/actuator/prometheus", "/error")
                         .permitAll()
                         .anyRequest().authenticated())

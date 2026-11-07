@@ -3,6 +3,7 @@ package co.com.crediya.api.exception;
 import co.com.crediya.api.dto.ApiErrorResponse;
 import co.com.crediya.model.exceptions.AccesoDenegadoException;
 import co.com.crediya.model.exceptions.DatosInvalidosException;
+import co.com.crediya.model.exceptions.ServicioExternoException;
 import co.com.crediya.model.exceptions.TipoPrestamoNoExisteException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.databind.exc.MismatchedInputException;
@@ -45,6 +47,22 @@ public class GlobalExceptionHandler {
                                                                  HttpServletRequest request) {
         log.warn("Acceso denegado en {}: {}", request.getRequestURI(), ex.getMessage());
         return construir(HttpStatus.FORBIDDEN, List.of(ex.getMessage()), request);
+    }
+
+    @ExceptionHandler(ServicioExternoException.class)
+    public ResponseEntity<ApiErrorResponse> handleServicioExterno(ServicioExternoException ex,
+                                                                  HttpServletRequest request) {
+        log.error("Dependencia externa no disponible en {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        return construir(HttpStatus.SERVICE_UNAVAILABLE,
+                List.of(ex.getMessage() + ". Intente nuevamente más tarde"), request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleParametroInvalido(MethodArgumentTypeMismatchException ex,
+                                                                    HttpServletRequest request) {
+        log.warn("Parámetro {} inválido en {}: {}", ex.getName(), request.getRequestURI(), ex.getValue());
+        return construir(HttpStatus.BAD_REQUEST,
+                List.of("El parámetro " + ex.getName() + " debe ser un número entero"), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
