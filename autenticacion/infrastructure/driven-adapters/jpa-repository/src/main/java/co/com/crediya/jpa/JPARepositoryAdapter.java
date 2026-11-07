@@ -13,6 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -68,6 +69,14 @@ public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, In
     @Transactional(readOnly = true)
     public Optional<User> findByCorreoElectronico(String correoElectronico) {
         return repository.findByEmail(correoElectronico).map(JPARepositoryAdapter::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findByDocumentosIdentidad(List<String> documentosIdentidad) {
+        return repository.findByDocumentoIdentidadIn(documentosIdentidad).stream()
+                .map(JPARepositoryAdapter::toDomain)
+                .toList();
     }
 
     /** Dominio → tabla "usuario" (los nombres de columna difieren de los del dominio). */

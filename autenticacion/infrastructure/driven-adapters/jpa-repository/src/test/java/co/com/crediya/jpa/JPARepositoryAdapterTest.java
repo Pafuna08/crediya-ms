@@ -135,6 +135,18 @@ class JPARepositoryAdapterTest {
     }
 
     @Test
+    void buscaVariosUsuariosPorDocumento() {
+        when(repository.findByDocumentoIdentidadIn(List.of("3000000000", "4000000000"))).thenReturn(List.of(
+                UserEntity.builder().idUsuario(3).nombre("Carlos").documentoIdentidad("3000000000").idRol(3).build()));
+
+        List<User> usuarios = adapter.findByDocumentosIdentidad(List.of("3000000000", "4000000000"));
+
+        assertEquals(1, usuarios.size());
+        assertEquals("Carlos", usuarios.getFirst().getNombres());
+        assertEquals("3000000000", usuarios.getFirst().getDocumentoIdentidad());
+    }
+
+    @Test
     void buscaPorIdYListaTodos() {
         UserEntity entidad = UserEntity.builder().idUsuario(5).nombre("Ana").email("ana@correo.com").idRol(3).build();
         when(repository.findById(5)).thenReturn(Optional.of(entidad));
