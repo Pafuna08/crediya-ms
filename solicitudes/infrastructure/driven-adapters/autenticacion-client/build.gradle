@@ -1,0 +1,12 @@
+dependencies {
+    implementation project(':model')
+    implementation 'org.springframework:spring-context'
+    implementation 'org.slf4j:slf4j-api'
+    // Cliente HTTP (RestClient) y conversión JSON
+    implementation 'org.springframework:spring-web'
+    implementation 'tools.jackson.core:jackson-databind'
+    // Para reenviar el token de quien hace la petición
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+
+    testImplementation 'org.springframework.security:spring-security-oauth2-jose'
+}
