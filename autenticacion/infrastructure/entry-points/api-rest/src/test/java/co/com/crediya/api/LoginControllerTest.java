@@ -3,6 +3,7 @@ package co.com.crediya.api;
 import co.com.crediya.model.exceptions.CredencialesInvalidasException;
 import co.com.crediya.model.exceptions.DatosInvalidosException;
 import co.com.crediya.model.seguridad.Token;
+import co.com.crediya.usecase.consultarusuarios.ConsultarUsuariosUseCase;
 import co.com.crediya.usecase.login.LoginUseCase;
 import co.com.crediya.usecase.user.UserUseCase;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,9 @@ class LoginControllerTest {
 
     @MockitoBean
     private UserUseCase userUseCase;
+
+    @MockitoBean
+    private ConsultarUsuariosUseCase consultarUsuariosUseCase;
 
     private RestTestClient client;
 

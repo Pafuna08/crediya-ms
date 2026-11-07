@@ -6,6 +6,7 @@ import co.com.crediya.model.exceptions.DocumentoYaRegistradoException;
 import co.com.crediya.model.exceptions.RolNoExisteException;
 import co.com.crediya.model.rol.Rol;
 import co.com.crediya.model.user.User;
+import co.com.crediya.usecase.consultarusuarios.ConsultarUsuariosUseCase;
 import co.com.crediya.usecase.login.LoginUseCase;
 import co.com.crediya.usecase.user.UserUseCase;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,9 @@ class UserControllerTest {
 
     @MockitoBean
     private LoginUseCase loginUseCase;
+
+    @MockitoBean
+    private ConsultarUsuariosUseCase consultarUsuariosUseCase;
 
     private RestTestClient client;
 
@@ -197,6 +201,45 @@ class UserControllerTest {
                 .body("hola")
                 .exchange()
                 .expectStatus().isEqualTo(415);
+    }
+
+    @Test
+    void asesorConsultaUsuariosPorDocumentoSinVerClaves() {
+        when(consultarUsuariosUseCase.buscarPorDocumentos(List.of("3000000000", "4000000000"))).thenReturn(List.of(
+                User.builder().id(3L).nombres("Carlos").apellidos("Cliente").documentoIdentidad("3000000000")
+                        .correoElectronico("carlos@correo.com").salarioBase(new java.math.BigDecimal("2500000"))
+                        .clave("$2a$10$secreto").rol(Rol.builder().id(3L).nombre(Rol.CLIENTE).build()).build()));
+
+        client.get().uri(URL + "?documentos=3000000000,4000000000")
+                .header(HttpHeaders.AUTHORIZATION, TokensDePrueba.bearer(Rol.ASESOR))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[0].documento_identidad").isEqualTo("3000000000")
+                .jsonPath("$[0].correo_electronico").isEqualTo("carlos@correo.com")
+                .jsonPath("$[0].salario_base").isEqualTo(2500000)
+                .jsonPath("$[0].clave").doesNotExist();
+    }
+
+    @Test
+    void clienteNoPuedeConsultarUsuarios() {
+        client.get().uri(URL + "?documentos=3000000000")
+                .header(HttpHeaders.AUTHORIZATION, TokensDePrueba.bearer(Rol.CLIENTE))
+                .exchange()
+                .expectStatus().isForbidden();
+
+        verify(consultarUsuariosUseCase, never()).buscarPorDocumentos(any());
+    }
+
+    @Test
+    void consultarUsuariosExigeElParametroDocumentos() {
+        client.get().uri(URL)
+                .header(HttpHeaders.AUTHORIZATION, TokensDePrueba.bearer(Rol.ADMIN))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.mensajes[0]").isEqualTo("El parámetro documentos es obligatorio");
     }
 
     @Test

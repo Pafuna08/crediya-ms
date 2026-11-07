@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -68,6 +69,14 @@ public class GlobalExceptionHandler {
             }
         }
         return construir(HttpStatus.BAD_REQUEST, List.of(mensaje), request);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiErrorResponse> handleParametroFaltante(MissingServletRequestParameterException ex,
+                                                                    HttpServletRequest request) {
+        log.warn("Falta el parámetro {} en {}", ex.getParameterName(), request.getRequestURI());
+        return construir(HttpStatus.BAD_REQUEST,
+                List.of("El parámetro " + ex.getParameterName() + " es obligatorio"), request);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
